@@ -1,9 +1,9 @@
 import pytest
 
-from pages.login_page import LoginPage
-from pages.inventory_page import InventoryPage
 from pages.cart_page import CartPage
 from pages.checkout_page import CheckoutPage
+from pages.inventory_page import InventoryPage
+from pages.login_page import LoginPage
 
 URL = "https://www.saucedemo.com/"
 USERNAME = "standard_user"
@@ -23,30 +23,43 @@ def shop(firefox_driver):
     }
 
 
-def test_full_purchase_flow(shop):
+def test_full_purchase_flow(shop, firefox_driver):
     login = shop["login"]
     inventory = shop["inventory"]
     cart = shop["cart"]
     checkout = shop["checkout"]
 
-    login.login(USERNAME, PASSWORD)
+    items_count = None
+    total = None
 
-    inventory.add_products([
-        inventory.BACKPACK,
-        inventory.BOLT_TSHIRT,
-        inventory.ONESIE,
-    ])
+    try:
+        login.login(USERNAME, PASSWORD)
 
-    inventory.open_cart()
-    items_count = cart.get_items_count()
-    assert items_count == 3, f"В корзине {items_count} товаров, ожидали 3"
+        inventory.add_products([
+            inventory.BACKPACK,
+            inventory.BOLT_TSHIRT,
+            inventory.ONESIE,
+        ])
 
-    cart.click_checkout()
+        inventory.open_cart()
+        items_count = cart.get_items_count()
 
-    checkout.fill_form("Иван", "Иванов", "630000")
-    checkout.click_continue()
+        cart.click_checkout()
 
-    total = checkout.get_total()
+        checkout.fill_form("Иван", "Иванов", "630000")
+        checkout.click_continue()
+
+        total = checkout.get_total()
+
+    finally:
+        try:
+            firefox_driver.quit()
+        except Exception:
+            pass
+
+    assert items_count == 3, (
+        f"В корзине {items_count} товаров, ожидали 3"
+    )
     assert total == EXPECTED_TOTAL, (
         f"Ожидали '{EXPECTED_TOTAL}', на странице: '{total}'"
     )
